@@ -1,12 +1,10 @@
 // PWA UPDATE PROCESS
 // ------------------
-// 1. To trigger a PWA update, you MUST change this file.
-// 2. The simplest and best way is to increment the version number in the CACHE_NAME variable below.
-//    e.g., 'phaseloop-cache-v1' becomes 'phaseloop-cache-v2'.
-// 3. If you add new files to the project that are critical for the app shell, add them to the 'urlsToCache' list below.
-// 4. The 'activate' event will automatically clean up any old caches that don't match the new CACHE_NAME.
+// This service worker uses an automated versioning system.
+// A new version is generated on every build, so you do not need to manually increment the cache name.
+// The 'activate' event will automatically clean up any old caches.
 
-const CACHE_NAME = 'phaseloop-cache-v3';
+const CACHE_NAME = `phaseloop-cache-${__APP_VERSION__}`;
 const urlsToCache = [
   '/',
   '/index.html',
