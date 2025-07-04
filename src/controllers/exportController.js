@@ -63,39 +63,29 @@ async function performExport(scenes, zipFileName) {
     URL.revokeObjectURL(a.href);
 }
 
-export async function exportAllAsZip() {
-    const allScenes = getScenes();
-    if (!allScenes || allScenes.length === 0) return;
-    
-    dom.exportBtn.disabled = true;
-    dom.exportBtnText.textContent = "Exporting...";
+
+async function handleExport(exportType) {
+    const isAll = exportType === 'all';
+    const button = isAll ? dom.exportBtn : dom.exportSelectedBtn;
+    const buttonText = isAll ? dom.exportBtnText : dom.exportSelectedBtnText;
+    const originalText = isAll ? 'Export All' : 'Export Selected';
+    const scenesToExport = isAll ? getScenes() : [getActiveScene()];
+
+    if (!scenesToExport || scenesToExport.length === 0 || !scenesToExport[0]) return;
+
+    button.disabled = true;
+    buttonText.textContent = "Exporting...";
 
     try {
-        await performExport(allScenes, 'realigned_session.zip');
+        const zipName = isAll ? 'realigned_session.zip' : `realigned_${scenesToExport[0].name.replace(/[\s/]/g, '_')}.zip`;
+        await performExport(scenesToExport, zipName);
     } catch (err) {
-        console.error("Error during 'Export All' zipping process:", err);
+        console.error(`Error during '${exportType}' export:`, err);
         showError("An error occurred during the export process.");
     } finally {
-        dom.exportBtn.disabled = false;
-        dom.exportBtnText.textContent = "Export All";
+        button.disabled = false;
+        buttonText.textContent = originalText;
     }
 }
 
-export async function exportSelectedAsZip() {
-    const activeScene = getActiveScene();
-    if (!activeScene) return;
-
-    dom.exportSelectedBtn.disabled = true;
-    dom.exportSelectedBtnText.textContent = "Exporting...";
-
-    try {
-        const sanitizedSceneName = activeScene.name.replace(/[\s/]/g, '_');
-        await performExport([activeScene], `realigned_${sanitizedSceneName}.zip`);
-    } catch (err) {
-        console.error("Error during 'Export Selected' zipping process:", err);
-        showError("An error occurred during the export process.");
-    } finally {
-        dom.exportSelectedBtn.disabled = false;
-        dom.exportSelectedBtnText.textContent = "Export Selected";
-    }
-}
+export { handleExport };

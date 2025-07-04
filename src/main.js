@@ -7,7 +7,7 @@ import { handleFileSelect, handleFileDrop } from './fileHandler.js';
 import { setupUI, resetApplicationState } from './ui/uiOrchestrator.js';
 import { initDragAndDrop } from './ui/globalUI.js';
 import { toggleAllPlayback } from './controllers/playbackController.js';
-import { exportAllAsZip, exportSelectedAsZip } from './controllers/exportController.js';
+import { handleExport } from './controllers/exportController.js';
 import { handleDrag, handleDragEnd, changeZoom, applyZoom } from './controllers/waveformInteraction.js';
 import { ZOOM_FACTOR } from './config.js';
 
@@ -20,8 +20,8 @@ function main() {
     dom.fileInput.addEventListener('change', handleFileSelect);
     dom.resetBtn.addEventListener('click', () => resetApplicationState(true));
     dom.playAllBtn.addEventListener('click', toggleAllPlayback);
-    dom.exportBtn.addEventListener('click', exportAllAsZip);
-    dom.exportSelectedBtn.addEventListener('click', exportSelectedAsZip);
+    dom.exportBtn.addEventListener('click', () => handleExport('all'));
+    dom.exportSelectedBtn.addEventListener('click', () => handleExport('selected'));
 
     dom.uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dom.uploadBox.classList.add('bg-gray-600'); });
     dom.uploadBox.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dom.uploadBox.classList.remove('bg-gray-600'); });
