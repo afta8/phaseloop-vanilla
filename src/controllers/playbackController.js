@@ -29,7 +29,7 @@ export function startAllPlayback() {
     setGlobal('isPlaying', true);
 
     const masterStartTime = getGlobal('playbackStartTime');
-    if (masterStartTime === null) { // <-- FIX: Changed from === 0 to === null
+    if (masterStartTime === null) {
         console.error("Playback started without a master start time.");
         setGlobal('isPlaying', false); // Revert playing state
         return;
@@ -40,13 +40,16 @@ export function startAllPlayback() {
     const groupPlayheadPosition = group.loopStart + elapsed;
 
     const globalTracks = getTracks();
-    const isAnyTrackSoloed = globalTracks.some(t => t.isSoloed);
+
+    // --- BUG FIX ---
+    // The key change is here. We now create an audio source for EVERY track that has audio,
+    // regardless of its mute or solo state. The audibility is controlled entirely by the
+    // gainNode, which is managed by updateAudioAndUI().
 
     globalTracks.forEach(track => {
         const audioData = getAudioForTrack(track.id);
-        const shouldPlay = audioData && ((isAnyTrackSoloed && track.isSoloed) || (!isAnyTrackSoloed && !track.isMuted));
-
-        if (shouldPlay) {
+        // We only check if audioData exists.
+        if (audioData) {
             const source = audioContext.createBufferSource();
             source.buffer = audioData.audioBuffer;
             source.loop = true;
