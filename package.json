@@ -1,6 +1,8 @@
 {
   "name": "phaseloop-vanilla",
   "version": "1.0.0",
+  "type": "module",
+  "description": "A client-side web application to re-align audio loops exported from the Endlesss app.",
   "main": "sw.js",
   "scripts": {
     "dev": "vite",
@@ -8,16 +10,15 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17",
-    "vite": "^7.0.2",
-    "vite-plugin-pwa": "^1.0.1"
-  },
+  "license": "MIT",
   "dependencies": {
     "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "vite": "^7.0.2",
+    "vite-plugin-pwa": "^1.0.1"
   }
 }
