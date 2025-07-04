@@ -1,5 +1,6 @@
 // src/controllers/exportController.js
 
+import JSZip from 'jszip';
 import { dom, getScenes, getActiveScene, getAudioForTrack, getGlobal, getGroup } from '../state/data.js';
 import { bufferToWav, findNearestZeroCrossing } from '../audio.js';
 import { showError } from '../ui/globalUI.js';

@@ -1,5 +1,6 @@
 // src/fileHandler.js
 
+import JSZip from 'jszip';
 import { dom, getScenes, getTracks, getGlobal, getActiveScene, getGroup } from './state/data.js';
 import { addScene, setGlobal } from './state/actions.js';
 import { generatePeakData } from './audio.js';
