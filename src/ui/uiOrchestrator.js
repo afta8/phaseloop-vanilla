@@ -4,7 +4,7 @@ import { dom, getGlobal, getActiveScene, getScenes, getTracks, getAudioForTrack,
 import { setGlobal, setScenes, reorderScene } from '../state/actions.js';
 import { drawWaveform } from '../rendering/waveformRenderer.js';
 import { drawRuler } from '../rendering/rulerRenderer.js';
-import { handleDragStart } from '../controllers/waveformInteraction.js';
+import { handleDragStart, handleWheelZoom } from '../controllers/waveformInteraction.js';
 import { stopAllPlayback, startAllPlayback, toggleAllPlayback } from '../controllers/playbackController.js';
 import { renderSceneTabs, closeContextMenu } from './sceneTabs.js';
 import { createTrackShell, getWaveformAreaHTML, updateTrackMuteSoloStyles } from './trackUI.js';
@@ -73,6 +73,9 @@ function updateWaveformDisplays() {
         if (waveformMask) {
             waveformMask.addEventListener('mousedown', handleDragStart);
             waveformMask.addEventListener('touchstart', handleDragStart, { passive: false });
+            // --- FEATURE ---
+            // Add the wheel event listener for scroll-to-zoom
+            waveformMask.addEventListener('wheel', handleWheelZoom, { passive: false });
         }
     });
     

@@ -7,7 +7,20 @@ import { updateGlobalZoomButtons } from '../ui/globalUI.js';
 import { drawWaveform } from '../rendering/waveformRenderer.js';
 import { stopAllPlayback, toggleAllPlayback, startAllPlayback } from './playbackController.js';
 import { findNearestZeroCrossing } from '../audio.js';
-import { DRAG_THRESHOLD, MIN_ZOOM, MAX_ZOOM } from '../config.js';
+import { DRAG_THRESHOLD, MIN_ZOOM, MAX_ZOOM, ZOOM_FACTOR } from '../config.js';
+
+export function handleWheelZoom(event) {
+    event.preventDefault();
+
+    // --- REFINEMENT ---
+    // 1. Invert direction: A positive deltaY (scroll down / two-finger swipe up) now zooms IN.
+    // 2. Reduce sensitivity: Instead of the large ZOOM_FACTOR, we use a much smaller
+    //    multiplier on the deltaY value to create a smoother zoom on trackpads.
+    const scrollAmount = event.deltaY * 0.005;
+    const factor = Math.exp(scrollAmount);
+
+    changeZoom(factor);
+}
 
 export function changeZoom(factor) {
     let newZoom = getGlobal('zoomLevel') * factor;
@@ -125,7 +138,6 @@ export function handleDragEnd(event) {
             }
         }
         if (getGlobal('wasPlayingBeforeDrag')) {
-            // FIX: Call toggleAllPlayback to force a fresh play from the new start point
             toggleAllPlayback();
         }
     }
