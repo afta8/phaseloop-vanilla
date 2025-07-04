@@ -6,7 +6,7 @@
 // 3. If you add new files to the project that are critical for the app shell, add them to the 'urlsToCache' list below.
 // 4. The 'activate' event will automatically clean up any old caches that don't match the new CACHE_NAME.
 
-const CACHE_NAME = `phaseloop-cache-${__APP_VERSION__}`;
+const CACHE_NAME = 'phaseloop-cache-v3';
 const urlsToCache = [
   '/',
   '/index.html',
