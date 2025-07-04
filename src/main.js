@@ -1,5 +1,6 @@
 // src/main.js
 
+import './style.css';
 import { dom, getGlobal } from './state/data.js';
 import { initializeState, setGlobal, reorderScene } from './state/actions.js';
 import { handleFileSelect, handleFileDrop } from './fileHandler.js';
