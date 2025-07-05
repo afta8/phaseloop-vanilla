@@ -94,9 +94,11 @@ export async function handleDawProjectExport() {
         const detectedTempo = detectTempoFromFilenames(scenes) || 120;
         exporter.setTempo(detectedTempo);
 
+        // --- CHANGE ---
+        // Mute/Solo options have been removed from the addTrack call to prevent the XML bug.
         tracks.forEach((track, index) => {
             const trackName = `Track ${index + 1}`;
-            exporter.addTrack(trackName, { isMuted: track.isMuted, isSoloed: track.isSoloed });
+            exporter.addTrack(trackName);
         });
 
         scenes.forEach(scene => {
@@ -121,7 +123,7 @@ export async function handleDawProjectExport() {
                         
                         const audioDurationInSeconds = appTrackAudioData.audioBuffer.duration;
                         const beatsPerSecond = detectedTempo / 60;
-                        const clipDurationInBeats = audioDurationInSeconds * beatsPerSecond;
+                        const clipDurationInBeats = Math.round(audioDurationInSeconds * beatsPerSecond);
 
                         exporter.addAudioClip(
                             trackName, 

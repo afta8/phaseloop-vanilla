@@ -302,11 +302,13 @@ class _Channel extends _Referenceable {
     const obj = { Channel: super.toXmlObject() };
     if (this.role) obj.Channel['@_role'] = this.role;
     if (this.destination) obj.Channel['@_destination'] = this.destination.id;
-    if (this.isSoloed) obj.Channel['@_solo'] = true;
 
-    if (this.isMuted) {
-        obj.Channel.Mute = new _BoolParameter(true).toXmlObject().BoolParameter;
-    }
+    // FIX: Always include the solo attribute and ensure its value is a string "true" or "false".
+    obj.Channel['@_solo'] = String(this.isSoloed);
+
+    // FIX: Always include the Mute element as a child, with a value of "true" or "false".
+    obj.Channel.Mute = new _BoolParameter(this.isMuted).toXmlObject().BoolParameter;
+
     return obj;
   }
 }
