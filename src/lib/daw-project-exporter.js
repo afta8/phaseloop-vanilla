@@ -2,11 +2,16 @@
  * daw-project-exporter.js
  * A simplified, single-file JavaScript module for creating .dawproject files.
  *
+ * This module is a derivative work of the dawproject-typescript library.
+ * Original work Copyright (c) 2023 Per Ivar Nerseth.
+ * Licensed under the MIT License.
+ *
+ * You can find the original source and license here:
+ * https://github.com/perivar/dawproject-typescript
+ *
  * This module is designed for a client-side web application environment
  * and depends on 'jszip' and 'fast-xml-parser', which are expected to be
  * available in the host application.
- *
- * @license MIT
  */
 
 import JSZip from 'jszip';
@@ -59,6 +64,22 @@ class _Referenceable {
     attributes['@_id'] = this.id;
     return attributes;
   }
+}
+
+/**
+ * Represents a boolean parameter.
+ */
+class _BoolParameter extends _Referenceable {
+    constructor(value) {
+        super();
+        this.value = value;
+    }
+
+    toXmlObject() {
+        const attributes = super.toXmlObject();
+        if (this.value !== undefined) attributes['@_value'] = this.value;
+        return { BoolParameter: attributes };
+    }
 }
 
 /**
@@ -135,47 +156,126 @@ class _FileReference {
 }
 
 /**
+ * Represents a single time-stretching point.
+ */
+class _Warp {
+    constructor(time, contentTime) {
+        this.time = time;
+        this.contentTime = contentTime;
+    }
+
+    toXmlObject() {
+        return {
+            Warp: {
+                '@_time': this.time,
+                '@_contentTime': this.contentTime,
+            },
+        };
+    }
+}
+
+/**
  * Represents an audio timeline.
  */
 class _Audio extends _Timeline {
-  constructor(fileName) {
+  constructor(fileName, durationInSeconds) {
     super(fileName);
     this.file = new _FileReference(`samples/${fileName}`);
-    // These are placeholders as we don't have the real data
+    this.timeUnit = TimeUnit.SECONDS;
     this.sampleRate = 44100;
     this.channels = 2;
-    this.duration = 0; // Duration will be unknown until analysis
+    this.duration = durationInSeconds;
   }
 
   toXmlObject() {
     const obj = { Audio: super.toXmlObject() };
     obj.Audio['@_sampleRate'] = this.sampleRate;
     obj.Audio['@_channels'] = this.channels;
-    obj.Audio['@_duration'] = this.duration; // This is a placeholder
+    obj.Audio['@_duration'] = this.duration;
     obj.Audio.File = this.file.toXmlObject();
     return obj;
   }
 }
 
 /**
- * Represents a clip containing content like audio.
+ * Represents a timeline containing warps and nested content.
+ */
+class _Warps extends _Timeline {
+    constructor(content, warpPoints) {
+        super('Warps');
+        this.content = content;
+        this.warpPoints = warpPoints;
+        this.timeUnit = TimeUnit.BEATS;
+        this.contentTimeUnit = TimeUnit.SECONDS;
+    }
+
+    toXmlObject() {
+        const obj = { Warps: super.toXmlObject() };
+        obj.Warps['@_contentTimeUnit'] = this.contentTimeUnit;
+
+        if (this.content) {
+            const contentObj = this.content.toXmlObject();
+            const tagName = Object.keys(contentObj)[0];
+            obj.Warps[tagName] = contentObj[tagName];
+        }
+
+        if (this.warpPoints && this.warpPoints.length > 0) {
+            obj.Warps.Warp = this.warpPoints.map(w => w.toXmlObject().Warp);
+        }
+
+        return obj;
+    }
+}
+
+/**
+ * Represents a timeline containing other clips.
+ */
+class _Clips extends _Timeline {
+  constructor(clips = []) {
+    super('Clips');
+    this.clips = clips;
+  }
+
+  toXmlObject() {
+    const obj = { Clips: super.toXmlObject() };
+    if (this.clips.length > 0) {
+      obj.Clips.Clip = this.clips.map(c => c.toXmlObject().Clip);
+    }
+    return obj;
+  }
+}
+
+/**
+ * Represents a clip containing content like audio or other clips.
  */
 class _Clip extends _Referenceable {
-  constructor(name, content, duration, loopStart, loopEnd) {
+  constructor(name, content, duration, { time = 0, loopStart = undefined, loopEnd = undefined, playStartInSeconds = undefined, color = undefined, contentTimeUnit = undefined } = {}) {
     super(name);
     this.content = content;
-    this.time = 0; // Default start time in beats
+    this.time = time;
     this.duration = duration;
     this.loopStart = loopStart;
     this.loopEnd = loopEnd;
+    this.playStart = playStartInSeconds;
+    this.color = color;
+    this.contentTimeUnit = contentTimeUnit;
   }
 
   toXmlObject() {
     const obj = { Clip: super.toXmlObject() };
     obj.Clip['@_time'] = this.time;
     obj.Clip['@_duration'] = this.duration;
+    if (this.color) obj.Clip['@_color'] = this.color;
     if (this.loopStart !== undefined) obj.Clip['@_loopStart'] = this.loopStart;
     if (this.loopEnd !== undefined) obj.Clip['@_loopEnd'] = this.loopEnd;
+
+    if (this.playStart !== undefined) {
+        obj.Clip['@_playStart'] = this.playStart;
+    }
+    
+    if (this.contentTimeUnit) {
+        obj.Clip['@_contentTimeUnit'] = this.contentTimeUnit;
+    }
 
     if (this.content) {
       const contentObj = this.content.toXmlObject();
@@ -190,9 +290,11 @@ class _Clip extends _Referenceable {
  * Represents a mixer channel.
  */
 class _Channel extends _Referenceable {
-  constructor(name, role) {
+  constructor(name, role, { isMuted = false, isSoloed = false } = {}) {
     super(name);
     this.role = role;
+    this.isMuted = isMuted;
+    this.isSoloed = isSoloed;
     this.devices = [];
   }
 
@@ -200,6 +302,11 @@ class _Channel extends _Referenceable {
     const obj = { Channel: super.toXmlObject() };
     if (this.role) obj.Channel['@_role'] = this.role;
     if (this.destination) obj.Channel['@_destination'] = this.destination.id;
+    if (this.isSoloed) obj.Channel['@_solo'] = true;
+
+    if (this.isMuted) {
+        obj.Channel.Mute = new _BoolParameter(true).toXmlObject().BoolParameter;
+    }
     return obj;
   }
 }
@@ -208,14 +315,16 @@ class _Channel extends _Referenceable {
  * Represents a sequencer track.
  */
 class _Track extends _Referenceable {
-  constructor(name) {
+  constructor(name, { color = undefined, channelOptions = {} } = {}) {
     super(name);
+    this.color = color;
     this.contentType = [ContentType.AUDIO];
-    this.channel = new _Channel(name, MixerRole.REGULAR);
+    this.channel = new _Channel(name, MixerRole.REGULAR, channelOptions);
   }
 
   toXmlObject() {
     const obj = { Track: super.toXmlObject() };
+    if (this.color) obj.Track['@_color'] = this.color;
     obj.Track['@_contentType'] = this.contentType.join(',');
     if (this.channel) {
       obj.Track.Channel = this.channel.toXmlObject().Channel;
@@ -228,14 +337,15 @@ class _Track extends _Referenceable {
  * Represents a scene.
  */
 class _Scene extends _Referenceable {
-  constructor(name) {
+  constructor(name, { color = undefined } = {}) {
     super(name);
-    // The content of a scene is a Lanes object holding ClipSlots
+    this.color = color;
     this.content = new _Lanes();
   }
 
   toXmlObject() {
     const obj = { Scene: super.toXmlObject() };
+    if (this.color) obj.Scene['@_color'] = this.color;
     if (this.content) {
       const contentObj = this.content.toXmlObject();
       obj.Scene.Lanes = contentObj.Lanes;
@@ -351,7 +461,6 @@ export class SimpleDawProjectExporter {
     this.scenes = new Map();
     this.audioFiles = new Map();
 
-    // Create and add a master track by default
     const masterTrack = new _Track('Master');
     masterTrack.channel.role = MixerRole.MASTER;
     masterTrack.contentType = [];
@@ -373,13 +482,17 @@ export class SimpleDawProjectExporter {
   /**
    * Adds a new global track to the project.
    * @param {string} trackName - The name of the track to add.
+   * @param {object} [options] - Optional parameters.
+   * @param {boolean} [options.isMuted=false] - Whether the track is muted.
+   * @param {boolean} [options.isSoloed=false] - Whether the track is soloed.
+   * @param {string} [options.color] - The color of the track (e.g., '#RRGGBB').
    */
-  addTrack(trackName) {
+  addTrack(trackName, { isMuted = false, isSoloed = false, color = undefined } = {}) {
     if (this.tracks.has(trackName)) {
       console.warn(`Track "${trackName}" already exists.`);
       return;
     }
-    const track = new _Track(trackName);
+    const track = new _Track(trackName, { color, channelOptions: { isMuted, isSoloed } });
     const masterTrack = this.tracks.get('Master');
     if (masterTrack) {
       track.channel.destination = masterTrack.channel;
@@ -391,13 +504,15 @@ export class SimpleDawProjectExporter {
   /**
    * Adds a new scene to the project.
    * @param {string} sceneName - The name of the scene to add.
+   * @param {object} [options] - Optional parameters.
+   * @param {string} [options.color] - The color of the scene (e.g., '#RRGGBB').
    */
-  addScene(sceneName) {
+  addScene(sceneName, { color = undefined } = {}) {
     if (this.scenes.has(sceneName)) {
       console.warn(`Scene "${sceneName}" already exists.`);
       return;
     }
-    const scene = new _Scene(sceneName);
+    const scene = new _Scene(sceneName, { color });
     this.project.scenes.push(scene);
     this.scenes.set(sceneName, scene);
   }
@@ -407,38 +522,45 @@ export class SimpleDawProjectExporter {
    * @param {string} trackName - The name of the target track.
    * @param {string} sceneName - The name of the target scene.
    * @param {Blob} audioBlob - The raw audio data as a Blob.
-   * @param {string} audioFileName - The desired file name for the audio sample (e.g., 'kick.wav').
+   * @param {string} audioFileName - The desired file name for the audio sample.
    * @param {number} clipDurationInBeats - The duration of the clip in beats.
+   * @param {number} audioDurationInSeconds - The original duration of the audio file in seconds.
+   * @param {object} [options] - Optional parameters.
+   * @param {number} [options.playStartInSeconds] - The start offset within the audio file in seconds.
+   * @param {string} [options.color] - The color of the clip (e.g., '#RRGGBB').
    */
-  addAudioClip(trackName, sceneName, audioBlob, audioFileName, clipDurationInBeats) {
+  addAudioClip(trackName, sceneName, audioBlob, audioFileName, clipDurationInBeats, audioDurationInSeconds, { playStartInSeconds = undefined, color = undefined } = {}) {
     const track = this.tracks.get(trackName);
     const scene = this.scenes.get(sceneName);
 
-    if (!track) {
-      throw new Error(`Track "${trackName}" not found. Please add it first.`);
-    }
-    if (!scene) {
-      throw new Error(`Scene "${sceneName}" not found. Please add it first.`);
-    }
-    if (track.channel.role === MixerRole.MASTER) {
-      throw new Error('Cannot add clips to the Master track.');
-    }
+    if (!track) throw new Error(`Track "${trackName}" not found. Please add it first.`);
+    if (!scene) throw new Error(`Scene "${sceneName}" not found. Please add it first.`);
+    if (track.channel.role === MixerRole.MASTER) throw new Error('Cannot add clips to the Master track.');
 
-    // Store the audio blob to be added to the zip later
     const samplePath = `samples/${audioFileName}`;
     this.audioFiles.set(samplePath, audioBlob);
+    
+    // Create the nested structure: Clip -> Clips -> Clip -> Warps -> Audio
+    const audio = new _Audio(audioFileName, audioDurationInSeconds);
+    const warpPoints = [ new _Warp(0, 0), new _Warp(clipDurationInBeats, audioDurationInSeconds) ];
+    const warps = new _Warps(audio, warpPoints);
+    
+    const innerClip = new _Clip(audioFileName, warps, clipDurationInBeats, { contentTimeUnit: TimeUnit.BEATS });
+    const clipsContainer = new _Clips([innerClip]);
 
-    // Create the DAW project structure for the clip
-    const audio = new _Audio(audioFileName);
-    const clip = new _Clip(audioFileName, audio, clipDurationInBeats, 0, clipDurationInBeats);
+    const outerClip = new _Clip(audioFileName, clipsContainer, clipDurationInBeats, {
+        loopStart: 0,
+        loopEnd: clipDurationInBeats,
+        playStartInSeconds,
+        color,
+    });
 
-    // Find or create the ClipSlot for this track in the scene
     let clipSlot = scene.content.lanes.find(lane => lane.track === track);
     if (!clipSlot) {
       clipSlot = new _ClipSlot(track);
       scene.content.lanes.push(clipSlot);
     }
-    clipSlot.clip = clip;
+    clipSlot.clip = outerClip;
   }
 
   /**
@@ -455,26 +577,21 @@ export class SimpleDawProjectExporter {
       suppressEmptyNode: true,
     });
 
-    // 1. Create and add metadata.xml
     const metadata = new _MetaData();
     const metadataXml = builder.build(metadata.toXmlObject());
     zip.file('metadata.xml', metadataXml);
 
-    // 2. Create and add project.xml
     const projectXml = builder.build(this.project.toXmlObject());
     zip.file('project.xml', projectXml);
 
-    // 3. Add all audio files
     const samplesFolder = zip.folder('samples');
     for (const [path, blob] of this.audioFiles.entries()) {
-      // The path already includes 'samples/', so we get the base name.
       const fileName = path.split('/').pop();
       if (fileName) {
         samplesFolder.file(fileName, blob);
       }
     }
 
-    // 4. Generate the final ZIP blob
     return zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
   }
 }

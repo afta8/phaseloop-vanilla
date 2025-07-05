@@ -28,21 +28,22 @@ export const METER_RELEASE = 0.95;
 
 // -- UI Constants --
 // A curated, non-random list of color themes for the scene groups.
+// Now includes hex codes for .dawproject export compatibility.
 export const GROUP_COLORS = [
-    { base: 'bg-blue-900', hover: 'bg-blue-800', active: 'bg-blue-700' },
-    { base: 'bg-teal-900', hover: 'bg-teal-800', active: 'bg-teal-700' },
-    { base: 'bg-purple-900', hover: 'bg-purple-800', active: 'bg-purple-700' },
-    { base: 'bg-amber-900', hover: 'bg-amber-800', active: 'bg-amber-700' },
-    { base: 'bg-rose-950', hover: 'bg-rose-900', active: 'bg-rose-800' },
-    { base: 'bg-sky-900', hover: 'bg-sky-800', active: 'bg-sky-700' },
-    { base: 'bg-lime-900', hover: 'bg-lime-800', active: 'bg-lime-700' },
-    { base: 'bg-slate-800', hover: 'bg-slate-700', active: 'bg-slate-600' },
-    { base: 'bg-cyan-900', hover: 'bg-cyan-800', active: 'bg-cyan-700' },
-    { base: 'bg-fuchsia-900', hover: 'bg-fuchsia-800', active: 'bg-fuchsia-700' },
-    { base: 'bg-red-900', hover: 'bg-red-800', active: 'bg-red-700' },
-    { base: 'bg-indigo-900', hover: 'bg-indigo-800', active: 'bg-indigo-700' },
-    { base: 'bg-pink-900', hover: 'bg-pink-800', active: 'bg-pink-700' },
-    { base: 'bg-stone-800', hover: 'bg-stone-700', active: 'bg-stone-600' },
-    { base: 'bg-emerald-900', hover: 'bg-emerald-800', active: 'bg-emerald-700' },
-    { base: 'bg-zinc-800', hover: 'bg-zinc-700', active: 'bg-zinc-600' },
+    { base: 'bg-blue-900', hover: 'bg-blue-800', active: 'bg-blue-700', hex: '#1e3a8a' },
+    { base: 'bg-teal-900', hover: 'bg-teal-800', active: 'bg-teal-700', hex: '#134e4a' },
+    { base: 'bg-purple-900', hover: 'bg-purple-800', active: 'bg-purple-700', hex: '#4c1d95' },
+    { base: 'bg-amber-900', hover: 'bg-amber-800', active: 'bg-amber-700', hex: '#78350f' },
+    { base: 'bg-rose-950', hover: 'bg-rose-900', active: 'bg-rose-800', hex: '#881337' },
+    { base: 'bg-sky-900', hover: 'bg-sky-800', active: 'bg-sky-700', hex: '#082f49' },
+    { base: 'bg-lime-900', hover: 'bg-lime-800', active: 'bg-lime-700', hex: '#365314' },
+    { base: 'bg-slate-800', hover: 'bg-slate-700', active: 'bg-slate-600', hex: '#1e293b' },
+    { base: 'bg-cyan-900', hover: 'bg-cyan-800', active: 'bg-cyan-700', hex: '#164e63' },
+    { base: 'bg-fuchsia-900', hover: 'bg-fuchsia-800', active: 'bg-fuchsia-700', hex: '#701a75' },
+    { base: 'bg-red-900', hover: 'bg-red-800', active: 'bg-red-700', hex: '#7f1d1d' },
+    { base: 'bg-indigo-900', hover: 'bg-indigo-800', active: 'bg-indigo-700', hex: '#312e81' },
+    { base: 'bg-pink-900', hover: 'bg-pink-800', active: 'bg-pink-700', hex: '#831843' },
+    { base: 'bg-stone-800', hover: 'bg-stone-700', active: 'bg-stone-600', hex: '#292524' },
+    { base: 'bg-emerald-900', hover: 'bg-emerald-800', active: 'bg-emerald-700', hex: '#064e3b' },
+    { base: 'bg-zinc-800', hover: 'bg-zinc-700', active: 'bg-zinc-600', hex: '#18181b' },
 ];

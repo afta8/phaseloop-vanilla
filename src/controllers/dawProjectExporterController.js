@@ -13,7 +13,7 @@ import { SimpleDawProjectExporter } from '../lib/daw-project-exporter.js';
  */
 async function createRealignedWavBlobs(scenes, snap) {
     const audioContext = getGlobal('audioContext');
-    const blobs = new Map(); // Map<sceneId, Map<trackId, {name, blob}>>
+    const blobs = new Map();
 
     for (const scene of scenes) {
         if (scene.audioAssignments.size === 0) continue;
@@ -63,16 +63,13 @@ function detectTempoFromFilenames(scenes) {
             if (match && match[1]) {
                 const tempo = parseFloat(match[1]);
                 if (!isNaN(tempo)) {
-                    console.log(`Tempo detected: ${tempo} BPM from file: ${audioData.name}`);
                     return tempo;
                 }
             }
         }
     }
-    console.log('No tempo found in filenames, defaulting to 120 BPM.');
     return null;
 }
-
 
 /**
  * The main export handler that uses the SimpleDawProjectExporter class.
@@ -94,26 +91,25 @@ export async function handleDawProjectExport() {
     try {
         const exporter = new SimpleDawProjectExporter();
 
-        // 1. Detect tempo or use default
         const detectedTempo = detectTempoFromFilenames(scenes) || 120;
         exporter.setTempo(detectedTempo);
 
-        // 2. Add all tracks from our app state
         tracks.forEach((track, index) => {
             const trackName = `Track ${index + 1}`;
-            exporter.addTrack(trackName);
+            exporter.addTrack(trackName, { isMuted: track.isMuted, isSoloed: track.isSoloed });
         });
 
-        // 3. Add all scenes from our app state
         scenes.forEach(scene => {
-            exporter.addScene(scene.name);
+            const group = getGroup(scene.groupId);
+            const sceneColor = group ? group.colorTheme.hex : undefined;
+            exporter.addScene(scene.name, { color: sceneColor });
         });
 
-        // 4. Generate realigned audio and add clips
         const snap = dom.snapToggle.checked;
         const allWavBlobs = await createRealignedWavBlobs(scenes, snap);
 
         for (const scene of scenes) {
+            const group = getGroup(scene.groupId);
             const sceneBlobs = allWavBlobs.get(scene.id);
             if (sceneBlobs) {
                 for (const [trackId, { name, blob }] of sceneBlobs.entries()) {
@@ -123,21 +119,26 @@ export async function handleDawProjectExport() {
                     if (trackIndex !== -1 && appTrackAudioData) {
                         const trackName = `Track ${trackIndex + 1}`;
                         
-                        // Calculate clip duration in beats
-                        const durationInSeconds = appTrackAudioData.audioBuffer.duration;
+                        const audioDurationInSeconds = appTrackAudioData.audioBuffer.duration;
                         const beatsPerSecond = detectedTempo / 60;
-                        const durationInBeats = durationInSeconds * beatsPerSecond;
+                        const clipDurationInBeats = audioDurationInSeconds * beatsPerSecond;
 
-                        exporter.addAudioClip(trackName, scene.name, blob, name, durationInBeats);
+                        exporter.addAudioClip(
+                            trackName, 
+                            scene.name, 
+                            blob, 
+                            name, 
+                            clipDurationInBeats, 
+                            audioDurationInSeconds, 
+                            { playStartInSeconds: group.loopStart }
+                        );
                     }
                 }
             }
         }
 
-        // 5. Generate the final .dawproject file blob
         const projectBlob = await exporter.generateProjectBlob();
 
-        // 6. Trigger the download
         const a = document.createElement('a');
         a.href = URL.createObjectURL(projectBlob);
         a.download = 'phaseloop-session.dawproject';
