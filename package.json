@@ -12,6 +12,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "fast-xml-parser": "^5.2.5",
     "jszip": "^3.10.1"
   },
   "devDependencies": {

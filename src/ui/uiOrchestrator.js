@@ -73,8 +73,6 @@ function updateWaveformDisplays() {
         if (waveformMask) {
             waveformMask.addEventListener('mousedown', handleDragStart);
             waveformMask.addEventListener('touchstart', handleDragStart, { passive: false });
-            // --- FEATURE ---
-            // Add the wheel event listener for scroll-to-zoom
             waveformMask.addEventListener('wheel', handleWheelZoom, { passive: false });
         }
     });
@@ -97,6 +95,9 @@ function updateWaveformDisplays() {
         const hasAudio = activeScene.audioAssignments.size > 0;
         dom.exportBtn.disabled = !hasAudio;
         dom.exportSelectedBtn.disabled = !hasAudio;
+        // --- FIX ---
+        // Enable the .dawproject button under the same condition
+        dom.exportDawProjectBtn.disabled = !hasAudio;
         dom.playAllBtn.disabled = !hasAudio;
         updateAudioAndUI();
         updateGlobalZoomButtons();
@@ -164,6 +165,9 @@ export function resetApplicationState(fullReset = true) {
         dom.fileInput.value = '';
         dom.exportBtn.disabled = true;
         dom.exportSelectedBtn.disabled = true;
+        // --- ADDITION ---
+        // Ensure the new button is also disabled on reset
+        dom.exportDawProjectBtn.disabled = true;
         dom.playAllBtn.disabled = true;
     }
 }

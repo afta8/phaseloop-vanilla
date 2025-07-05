@@ -1,0 +1,156 @@
+// src/controllers/dawProjectExporterController.js
+
+import { getScenes, getGlobal, getGroup, getTracks, dom } from '../state/data.js';
+import { bufferToWav, findNearestZeroCrossing } from '../audio.js';
+import { showError } from '../ui/globalUI.js';
+import { SimpleDawProjectExporter } from '../lib/daw-project-exporter.js';
+
+/**
+ * A helper function to generate all the necessary realigned audio blobs for the session.
+ * @param {Array} scenes - The scenes to process.
+ * @param {boolean} snap - Whether to snap to zero crossings.
+ * @returns {Promise<Map<string, Map<string, {name: string, blob: Blob}>>>}
+ */
+async function createRealignedWavBlobs(scenes, snap) {
+    const audioContext = getGlobal('audioContext');
+    const blobs = new Map(); // Map<sceneId, Map<trackId, {name, blob}>>
+
+    for (const scene of scenes) {
+        if (scene.audioAssignments.size === 0) continue;
+
+        const group = getGroup(scene.groupId);
+        let finalLoopStart = group.loopStart;
+
+        if (snap) {
+            const firstAudioTrackId = scene.audioAssignments.keys().next().value;
+            if (firstAudioTrackId) {
+                const audioData = scene.audioAssignments.get(firstAudioTrackId);
+                finalLoopStart = findNearestZeroCrossing(audioData, finalLoopStart);
+            }
+        }
+
+        const sceneBlobs = new Map();
+        for (const [trackId, audioData] of scene.audioAssignments.entries()) {
+            const startSample = Math.floor((finalLoopStart % audioData.audioBuffer.duration) * audioData.audioBuffer.sampleRate);
+            const newBuffer = audioContext.createBuffer(audioData.audioBuffer.numberOfChannels, audioData.audioBuffer.length, audioData.audioBuffer.sampleRate);
+
+            for (let i = 0; i < audioData.audioBuffer.numberOfChannels; i++) {
+                const oldChannelData = audioData.audioBuffer.getChannelData(i);
+                const newChannelData = newBuffer.getChannelData(i);
+                const firstPart = oldChannelData.subarray(startSample);
+                newChannelData.set(firstPart, 0);
+                const secondPart = oldChannelData.subarray(0, startSample);
+                newChannelData.set(secondPart, firstPart.length);
+            }
+            const wavBlob = bufferToWav(newBuffer);
+            const sanitizedFileName = audioData.name.replace(/\.[^/.]+$/, "");
+            sceneBlobs.set(trackId, { name: `realigned_${sanitizedFileName}.wav`, blob: wavBlob });
+        }
+        blobs.set(scene.id, sceneBlobs);
+    }
+    return blobs;
+}
+
+/**
+ * Iterates through scenes to find the first filename containing a BPM value.
+ * @param {Array} scenes - The scenes to search through.
+ * @returns {number|null} The detected BPM or null if not found.
+ */
+function detectTempoFromFilenames(scenes) {
+    for (const scene of scenes) {
+        for (const audioData of scene.audioAssignments.values()) {
+            const match = audioData.name.match(/(\d{2,3}(?:\.\d+)?)\s*BPM/i);
+            if (match && match[1]) {
+                const tempo = parseFloat(match[1]);
+                if (!isNaN(tempo)) {
+                    console.log(`Tempo detected: ${tempo} BPM from file: ${audioData.name}`);
+                    return tempo;
+                }
+            }
+        }
+    }
+    console.log('No tempo found in filenames, defaulting to 120 BPM.');
+    return null;
+}
+
+
+/**
+ * The main export handler that uses the SimpleDawProjectExporter class.
+ */
+export async function handleDawProjectExport() {
+    const button = dom.exportDawProjectBtn;
+    const buttonText = document.getElementById('export-dawproject-btn-text');
+    if (!button || !buttonText) return;
+
+    const originalText = 'Export .dawproject';
+    const scenes = getScenes().filter(s => s.audioAssignments.size > 0);
+    const tracks = getTracks();
+
+    if (scenes.length === 0) return;
+
+    button.disabled = true;
+    buttonText.textContent = 'Building...';
+
+    try {
+        const exporter = new SimpleDawProjectExporter();
+
+        // 1. Detect tempo or use default
+        const detectedTempo = detectTempoFromFilenames(scenes) || 120;
+        exporter.setTempo(detectedTempo);
+
+        // 2. Add all tracks from our app state
+        tracks.forEach((track, index) => {
+            const trackName = `Track ${index + 1}`;
+            exporter.addTrack(trackName);
+        });
+
+        // 3. Add all scenes from our app state
+        scenes.forEach(scene => {
+            exporter.addScene(scene.name);
+        });
+
+        // 4. Generate realigned audio and add clips
+        const snap = dom.snapToggle.checked;
+        const allWavBlobs = await createRealignedWavBlobs(scenes, snap);
+
+        for (const scene of scenes) {
+            const sceneBlobs = allWavBlobs.get(scene.id);
+            if (sceneBlobs) {
+                for (const [trackId, { name, blob }] of sceneBlobs.entries()) {
+                    const trackIndex = tracks.findIndex(t => t.id === trackId);
+                    const appTrackAudioData = scene.audioAssignments.get(trackId);
+
+                    if (trackIndex !== -1 && appTrackAudioData) {
+                        const trackName = `Track ${trackIndex + 1}`;
+                        
+                        // Calculate clip duration in beats
+                        const durationInSeconds = appTrackAudioData.audioBuffer.duration;
+                        const beatsPerSecond = detectedTempo / 60;
+                        const durationInBeats = durationInSeconds * beatsPerSecond;
+
+                        exporter.addAudioClip(trackName, scene.name, blob, name, durationInBeats);
+                    }
+                }
+            }
+        }
+
+        // 5. Generate the final .dawproject file blob
+        const projectBlob = await exporter.generateProjectBlob();
+
+        // 6. Trigger the download
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(projectBlob);
+        a.download = 'phaseloop-session.dawproject';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+
+    } catch (err) {
+        console.error("Error creating .dawproject file:", err);
+        showError("Failed to create .dawproject file.");
+    } finally {
+        button.disabled = false;
+        buttonText.textContent = originalText;
+    }
+}

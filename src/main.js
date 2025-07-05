@@ -8,7 +8,8 @@ import { setupUI, resetApplicationState } from './ui/uiOrchestrator.js';
 import { initDragAndDrop } from './ui/globalUI.js';
 import { toggleAllPlayback } from './controllers/playbackController.js';
 import { handleExport } from './controllers/exportController.js';
-import { handleDrag, handleDragEnd, changeZoom, applyZoom } from './controllers/waveformInteraction.js';
+import { handleDawProjectExport } from './controllers/dawProjectExporterController.js'; // <-- Corrected Import
+import { handleDrag, handleDragEnd, changeZoom, applyZoom, handleWheelZoom } from './controllers/waveformInteraction.js';
 import { ZOOM_FACTOR } from './config.js';
 
 function main() {
@@ -22,6 +23,8 @@ function main() {
     dom.playAllBtn.addEventListener('click', toggleAllPlayback);
     dom.exportBtn.addEventListener('click', () => handleExport('all'));
     dom.exportSelectedBtn.addEventListener('click', () => handleExport('selected'));
+    
+    dom.exportDawProjectBtn.addEventListener('click', handleDawProjectExport);
 
     dom.uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dom.uploadBox.classList.add('bg-gray-600'); });
     dom.uploadBox.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dom.uploadBox.classList.remove('bg-gray-600'); });

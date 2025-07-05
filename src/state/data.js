@@ -9,6 +9,8 @@ export const dom = {
     exportBtnText: document.getElementById('export-btn-text'),
     exportSelectedBtn: document.getElementById('export-selected-btn'),
     exportSelectedBtnText: document.getElementById('export-selected-btn-text'),
+    // --- ADDITION ---
+    exportDawProjectBtn: document.getElementById('export-dawproject-btn'),
     resetBtn: document.getElementById('reset-btn'),
     loadingIndicator: document.getElementById('loading-indicator'),
     errorMessageDiv: document.getElementById('error-message'),
