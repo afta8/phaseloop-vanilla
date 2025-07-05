@@ -94,8 +94,6 @@ export async function handleDawProjectExport() {
         const detectedTempo = detectTempoFromFilenames(scenes) || 120;
         exporter.setTempo(detectedTempo);
 
-        // --- CHANGE ---
-        // Mute/Solo options have been removed from the addTrack call to prevent the XML bug.
         tracks.forEach((track, index) => {
             const trackName = `Track ${index + 1}`;
             exporter.addTrack(trackName);
@@ -125,6 +123,8 @@ export async function handleDawProjectExport() {
                         const beatsPerSecond = detectedTempo / 60;
                         const clipDurationInBeats = Math.round(audioDurationInSeconds * beatsPerSecond);
 
+                        // --- FINAL FIX ---
+                        // The playStartInSeconds should be 0 because the audio is already realigned.
                         exporter.addAudioClip(
                             trackName, 
                             scene.name, 
@@ -132,7 +132,7 @@ export async function handleDawProjectExport() {
                             name, 
                             clipDurationInBeats, 
                             audioDurationInSeconds, 
-                            { playStartInSeconds: group.loopStart }
+                            { playStartInSeconds: 0 }
                         );
                     }
                 }
