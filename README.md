@@ -1,10 +1,10 @@
 # phaseloop-vanilla
 
-This is a client-side web application built to solve a specific workflow problem for musicians using the **Endlesss** looper app. In Endlesss, a collection of related stems is called a "Rifff". Due to the nature of continuous looping, stems exported from these Rifffs often don't start on the first downbeat. This tool provides a simple solution: load one or more Rifffs (referred to as "Scenes" in this app), visually set the correct start point, and export a new set of perfectly aligned audio files ready for any DAW.
+This is a client-side web application built to solve a specific workflow problem for musicians, particularly those using looping software like the **Endlesss** app. In such apps, exported audio stems often don't start on the musical downbeat. This tool provides a simple solution: load one or more sets of loops (referred to as "Scenes"), visually set the correct start point on any track, and have that alignment instantly synchronized across all related tracks and scenes before exporting them as a new set of perfectly aligned audio files ready for any DAW.
 
-The intended workflow is: **Export from Endlesss → Load in phaseloop & fix alignment → Export for use in your DAW of choice.** You can load files by using the file browser, or simply by dragging and dropping a folder, a ZIP file, or even the Rifffs directly from the Endlesss desktop app into the app.
+The intended workflow is: **Export from Looping Software → Load in Phaseloop & Fix Alignment → Export for Use in Your DAW of Choice**.
 
-This repository contains the original version of the application, built with vanilla JavaScript (ES6+). The resulting application is built on core web technologies and features a robust, custom state management system and a performance-optimized rendering pipeline, all without the use of a front-end framework.
+This repository contains the original version of the application, built with vanilla JavaScript (ES6+) and without a front-end framework. It features a robust, custom state management system and a performance-optimized rendering pipeline built on core web technologies.
 
 ## Live Demo
 
@@ -12,14 +12,21 @@ This repository contains the original version of the application, built with van
 
 ## Key Features
 
-* **Multi-Rifff/Scene Management:** Load multiple Rifffs from Endlesss (represented as "Scenes" in the UI). Group scenes together with distinct colors to share a synchronized alignment, perfect for different song sections.
-* **Synchronized Re-alignment:** Drag any waveform to set the correct start point. All other scenes within the same color-coded group are instantly realigned in perfect sync.
-* **DAW-like Mixing Controls:** Global Mute/Solo controls that persist across scenes, and real-time VU meters for each track.
-* **Advanced Interaction:** "Snap to Zero Crossing" feature to ensure click-free loop points, and fine-grained zoom controls (including scroll-to-zoom) for precise edits.
-* **Multiple Export Options:**
-    * **Export as .dawproject:** Export the entire session as a single `.dawproject` file for seamless import into compatible DAWs (e.g. Bitwig Studio, Cubase, Studio One).
-    * **Export All (ZIP):** Export the entire session as a single `.zip` file, with each scene's realigned `.wav` files organized into its own sub-folder.
-    * **Export Selected (ZIP):** Export only the currently active scene as a `.zip` file.
+* **Multi-Scene Management:** Load multiple sets of loops (e.g., from Endlesss "Rifffs") as distinct "Scenes". Scenes can be added via the file browser or by dragging and dropping folders or .zip files directly into the app.
+* **Scene Groups:** Organize scenes into color-coded groups. All scenes within a group share the same color and synchronized alignment, perfect for managing different song sections. Groups can be created by "splitting" existing groups and merged by dragging and dropping tabs.
+* **Synchronized Re-alignment:** Click and drag any waveform horizontally to set its correct start point against a static timeline ruler. The alignment is instantly applied to all other scenes within the same group.
+* **DAW-like Mixing Controls:**
+    * Global **Mute (M)** and **Solo (S)** buttons for each track that persist their state when switching between scenes.
+    * Real-time **VU meters** for each track with a smoothed peak-metering algorithm for a natural representation of loudness.
+* **Advanced Interaction & Workflow:**
+    * **"Snap to Zero Crossing"** feature ensures that exported loops are free of audible clicks or pops by snapping the start point to the nearest point of silence.
+    * **Fine-grained zoom controls**, including toolbar buttons and mouse scroll wheel support.
+    * **Playback via Spacebar** provides quick keyboard access to start and stop audio.
+    * **Intelligent File Loading** specifically for Endlesss users parses filenames for a track number (e.g., "8 - My Loop.wav") and automatically places the audio on the correct track.
+* **Multiple Export Options**:
+    * **Export as .dawproject (Recommended):** Generates a single `.dawproject` file for seamless import into compatible DAWs like Bitwig Studio and Studio One. This format includes realigned audio, auto-detected project tempo, scene colors, and sets clips to stretch mode.
+    * **Export All (ZIP):** Creates a single `.zip` archive containing a sub-folder for each scene with its realigned `.wav` files.
+    * **Export Selected (ZIP):** Exports only the currently active scene as a `.zip` file.
 * **Progressive Web App (PWA):** The application is fully installable on desktop and mobile devices for offline access and an integrated, native-app-like experience.
 
 ## Tech Stack
