@@ -7,7 +7,6 @@ import { generatePeakData } from './audio.js';
 import { setupUI } from './ui/uiOrchestrator.js';
 import { showError } from './ui/globalUI.js';
 import { stopAllPlayback, startAllPlayback } from './controllers/playbackController.js';
-// ▼▼▼ THIS IS THE CORRECTED IMPORT PATH ▼▼▼
 import { LOD_BLOCK_SIZES, SUPPORTED_AUDIO_EXTENSIONS, MAX_TRACKS } from './config.js';
 
 function isAudioFile(filename) {
@@ -153,15 +152,8 @@ export async function handleFiles(incomingFiles) {
         const results = await Promise.all(decodePromises);
 
         const wasPlaying = getGlobal('isPlaying');
-        let masterTime = 0;
 
         if (wasPlaying) {
-            const oldScene = getActiveScene();
-            if (oldScene) {
-                const elapsed = audioContext.currentTime - getGlobal('playbackStartTime');
-                const oldGroup = getGroup(oldScene.groupId);
-                masterTime = (getGlobal('playbackStartLoopTime') + elapsed) % oldScene.masterDuration;
-            }
             stopAllPlayback();
         }
 
@@ -221,7 +213,7 @@ export async function handleFiles(incomingFiles) {
         setupUI();
 
         if (wasPlaying) {
-            startAllPlayback(masterTime);
+            startAllPlayback();
         }
 
     } catch (error) {
