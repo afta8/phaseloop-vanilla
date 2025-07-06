@@ -1,37 +1,20 @@
 // src/controllers/exportController.js
 
 import JSZip from 'jszip';
-import { dom, getScenes, getActiveScene, getAudioForTrack, getGlobal, getGroup } from '../state/data.js';
-import { bufferToWav, findNearestZeroCrossing } from '../audio.js';
+import { dom, getScenes, getActiveScene, getGlobal, getGroup } from '../state/data.js';
+import { bufferToWav } from '../audio.js';
 import { showError } from '../ui/globalUI.js';
 
 async function performExport(scenes, zipFileName) {
     const zip = new JSZip();
-    const groupFinalLoopStarts = new Map();
-
-    const groupsToProcess = [...new Set(scenes.map(s => s.groupId))];
-    for (const groupId of groupsToProcess) {
-        let groupLoopStart = getGroup(groupId).loopStart;
-        if (dom.snapToggle.checked) {
-            const firstSceneOfGroup = scenes.find(s => s.groupId === groupId && s.audioAssignments.size > 0);
-            if (firstSceneOfGroup) {
-                const firstAudioTrackId = firstSceneOfGroup.audioAssignments.keys().next().value;
-                if (firstAudioTrackId) {
-                    const audioData = firstSceneOfGroup.audioAssignments.get(firstAudioTrackId);
-                    groupLoopStart = findNearestZeroCrossing(audioData, groupLoopStart);
-                }
-            }
-        }
-        groupFinalLoopStarts.set(groupId, groupLoopStart);
-    }
-
     const audioContext = getGlobal('audioContext');
 
     for (const scene of scenes) {
         if (scene.audioAssignments.size === 0) continue;
 
         const sceneFolder = zip.folder(scene.name.replace(/[\s/]/g, '_'));
-        const finalLoopStart = groupFinalLoopStarts.get(scene.groupId);
+        const group = getGroup(scene.groupId);
+        const finalLoopStart = group.loopStart; // Use the alignment directly from the state
 
         for (const [trackId, audioData] of scene.audioAssignments.entries()) {
             const startSample = Math.floor((finalLoopStart % audioData.audioBuffer.duration) * audioData.audioBuffer.sampleRate);

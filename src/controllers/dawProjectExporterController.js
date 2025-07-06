@@ -1,17 +1,16 @@
 // src/controllers/dawProjectExporterController.js
 
 import { getScenes, getGlobal, getGroup, getTracks, dom } from '../state/data.js';
-import { bufferToWav, findNearestZeroCrossing } from '../audio.js';
+import { bufferToWav } from '../audio.js';
 import { showError } from '../ui/globalUI.js';
 import { SimpleDawProjectExporter } from '../lib/daw-project-exporter.js';
 
 /**
  * A helper function to generate all the necessary realigned audio blobs for the session.
  * @param {Array} scenes - The scenes to process.
- * @param {boolean} snap - Whether to snap to zero crossings.
  * @returns {Promise<Map<string, Map<string, {name: string, blob: Blob}>>>}
  */
-async function createRealignedWavBlobs(scenes, snap) {
+async function createRealignedWavBlobs(scenes) {
     const audioContext = getGlobal('audioContext');
     const blobs = new Map();
 
@@ -19,15 +18,7 @@ async function createRealignedWavBlobs(scenes, snap) {
         if (scene.audioAssignments.size === 0) continue;
 
         const group = getGroup(scene.groupId);
-        let finalLoopStart = group.loopStart;
-
-        if (snap) {
-            const firstAudioTrackId = scene.audioAssignments.keys().next().value;
-            if (firstAudioTrackId) {
-                const audioData = scene.audioAssignments.get(firstAudioTrackId);
-                finalLoopStart = findNearestZeroCrossing(audioData, finalLoopStart);
-            }
-        }
+        const finalLoopStart = group.loopStart; // Use the alignment directly from the state
 
         const sceneBlobs = new Map();
         for (const [trackId, audioData] of scene.audioAssignments.entries()) {
@@ -105,11 +96,9 @@ export async function handleDawProjectExport() {
             exporter.addScene(scene.name, { color: sceneColor });
         });
 
-        const snap = dom.snapToggle.checked;
-        const allWavBlobs = await createRealignedWavBlobs(scenes, snap);
+        const allWavBlobs = await createRealignedWavBlobs(scenes);
 
         for (const scene of scenes) {
-            const group = getGroup(scene.groupId);
             const sceneBlobs = allWavBlobs.get(scene.id);
             if (sceneBlobs) {
                 for (const [trackId, { name, blob }] of sceneBlobs.entries()) {
@@ -123,8 +112,6 @@ export async function handleDawProjectExport() {
                         const beatsPerSecond = detectedTempo / 60;
                         const clipDurationInBeats = Math.round(audioDurationInSeconds * beatsPerSecond);
 
-                        // --- FINAL FIX ---
-                        // The playStartInSeconds should be 0 because the audio is already realigned.
                         exporter.addAudioClip(
                             trackName, 
                             scene.name, 
