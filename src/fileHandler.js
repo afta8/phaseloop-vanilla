@@ -195,19 +195,10 @@ export async function handleFiles(incomingFiles) {
             }
         }
         
-        const existingScenes = getScenes();
         const newScene = addScene({
             audioAssignments: newAudioAssignments,
             masterDuration: maxDuration,
         });
-
-        if (existingScenes.length > 0) {
-            const firstGroup = getGroup(existingScenes[0].groupId);
-            const newGroup = getGroup(newScene.groupId);
-            if (firstGroup && newGroup) {
-                newGroup.loopStart = firstGroup.loopStart;
-            }
-        }
         
         setGlobal('activeSceneId', newScene.id);
         setupUI();
