@@ -2,7 +2,7 @@
 
 import JSZip from 'jszip';
 import { dom, getScenes, getActiveScene, getGlobal, getGroup } from '../state/data.js';
-import { bufferToWav } from '../audio.js';
+import { createRealignedWavBlob } from '../audio.js';
 import { showError } from '../ui/globalUI.js';
 
 async function performExport(scenes, zipFileName) {
@@ -14,23 +14,10 @@ async function performExport(scenes, zipFileName) {
 
         const sceneFolder = zip.folder(scene.name.replace(/[\s/]/g, '_'));
         const group = getGroup(scene.groupId);
-        const finalLoopStart = group.loopStart; // Use the alignment directly from the state
+        const finalLoopStart = group.loopStart;
 
         for (const [trackId, audioData] of scene.audioAssignments.entries()) {
-            const startSample = Math.floor((finalLoopStart % audioData.audioBuffer.duration) * audioData.audioBuffer.sampleRate);
-            const newBuffer = audioContext.createBuffer(audioData.audioBuffer.numberOfChannels, audioData.audioBuffer.length, audioData.audioBuffer.sampleRate);
-
-            for (let i = 0; i < audioData.audioBuffer.numberOfChannels; i++) {
-                const oldChannelData = audioData.audioBuffer.getChannelData(i);
-                const newChannelData = newBuffer.getChannelData(i);
-                
-                const firstPart = oldChannelData.subarray(startSample);
-                newChannelData.set(firstPart, 0);
-                
-                const secondPart = oldChannelData.subarray(0, startSample);
-                newChannelData.set(secondPart, firstPart.length);
-            }
-            const wavBlob = bufferToWav(newBuffer);
+            const wavBlob = createRealignedWavBlob(audioData, finalLoopStart, audioContext);
             const sanitizedFileName = audioData.name.replace(/\.[^/.]+$/, "");
             sceneFolder.file(`realigned_${sanitizedFileName}.wav`, wavBlob);
         }

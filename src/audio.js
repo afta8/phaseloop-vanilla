@@ -116,3 +116,28 @@ export function findNearestZeroCrossing(audioData, targetTime) {
     // If no zero-crossing is found, return the original time
     return targetTime;
 }
+
+/**
+ * Creates a realigned WAV blob from an AudioBuffer based on a loop start time.
+ * @param {object} audioData - The audio data containing the source AudioBuffer.
+ * @param {number} loopStart - The desired start time in seconds for the loop.
+ * @param {AudioContext} audioContext - The global AudioContext instance.
+ * @returns {Blob} A blob representing the new, realigned WAV file.
+ */
+export function createRealignedWavBlob(audioData, loopStart, audioContext) {
+    const startSample = Math.floor((loopStart % audioData.audioBuffer.duration) * audioData.audioBuffer.sampleRate);
+    const newBuffer = audioContext.createBuffer(audioData.audioBuffer.numberOfChannels, audioData.audioBuffer.length, audioData.audioBuffer.sampleRate);
+
+    for (let i = 0; i < audioData.audioBuffer.numberOfChannels; i++) {
+        const oldChannelData = audioData.audioBuffer.getChannelData(i);
+        const newChannelData = newBuffer.getChannelData(i);
+
+        const firstPart = oldChannelData.subarray(startSample);
+        newChannelData.set(firstPart, 0);
+
+        const secondPart = oldChannelData.subarray(0, startSample);
+        newChannelData.set(secondPart, firstPart.length);
+    }
+    
+    return bufferToWav(newBuffer);
+}
