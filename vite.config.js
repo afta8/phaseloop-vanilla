@@ -26,6 +26,14 @@ export default defineConfig({
           },
         ],
       },
+      // --- FIX ---
+      // Add a workbox configuration to make the PWA more robust on cold starts.
+      workbox: {
+        // This ensures the service worker takes control of the page as soon as it's activated.
+        clientsClaim: true,
+        // This ensures the new service worker activates immediately, without waiting for old tabs to close.
+        skipWaiting: true,
+      },
     }),
   ],
 });
