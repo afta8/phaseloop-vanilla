@@ -43,7 +43,7 @@ This project uses Node.js and Vite for local development.
 
 1.  **Clone the repository:**
     ```
-    git clone [https://github.com/YOUR_USERNAME/phaseloop-vanilla.git](https://github.com/YOUR_USERNAME/phaseloop-vanilla.git)
+    git clone [https://github.com/afta8/phaseloop-vanilla.git](https://github.com/afta8/phaseloop-vanilla.git)
     ```
 2.  **Navigate to the project directory:**
     ```
