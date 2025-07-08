@@ -17,12 +17,21 @@ export function initializeState(audioContext) {
     if (state.tracks.length > 0) return;
     
     setGlobal('audioContext', audioContext);
+
+    // -6db applied to master output
+    const masterGainNode = audioContext.createGain();
+    masterGainNode.gain.value = 0.5; // halving the level equals -6db of gain reduction
+    masterGainNode.connect(audioContext.destination);
+    setGlobal('masterGainNode', masterGainNode); // Store it in global state for potential future use.
+
+
     for (let i = 0; i < 8; i++) {
         const gainNode = audioContext.createGain();
         const analyserNode = audioContext.createAnalyser();
         analyserNode.fftSize = 256; 
         gainNode.connect(analyserNode);
-        analyserNode.connect(audioContext.destination);
+        analyserNode.connect(masterGainNode);
+
         state.tracks.push({ id: `track_${i + 1}_${Date.now()}`, isMuted: false, isSoloed: false, gainNode: gainNode, analyserNode: analyserNode, });
     }
 }
