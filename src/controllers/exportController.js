@@ -34,12 +34,14 @@ async function performExport(scenes, zipFileName) {
 }
 
 
-async function handleExport(exportType) {
-    const isAll = exportType === 'all';
-    const button = isAll ? dom.exportBtn : dom.exportSelectedBtn;
-    const buttonText = isAll ? dom.exportBtnText : dom.exportSelectedBtnText;
-    const originalText = isAll ? 'Export All' : 'Export Selected';
-    const scenesToExport = isAll ? getScenes() : [getActiveScene()];
+async function handleExport() {
+    const exportSelectedOnly = getGlobal('exportSelectedOnly');
+    const button = dom.exportBtn;
+    const buttonText = dom.exportBtnText;
+    
+    const originalText = buttonText.textContent;
+    let scenesToExport = exportSelectedOnly ? [getActiveScene()] : getScenes();
+    scenesToExport = scenesToExport.filter(s => s && s.audioAssignments.size > 0);
 
     if (!scenesToExport || scenesToExport.length === 0 || !scenesToExport[0]) return;
 
@@ -47,10 +49,10 @@ async function handleExport(exportType) {
     buttonText.textContent = "Exporting...";
 
     try {
-        const zipName = isAll ? 'realigned_session.zip' : `realigned_${scenesToExport[0].name.replace(/[\s/]/g, '_')}.zip`;
+        const zipName = exportSelectedOnly ? `realigned_${scenesToExport[0].name.replace(/[\s/]/g, '_')}.zip` : 'realigned_session.zip';
         await performExport(scenesToExport, zipName);
     } catch (err) {
-        console.error(`Error during '${exportType}' export:`, err);
+        console.error(`Error during audio export:`, err);
         showError("An error occurred during the export process.");
     } finally {
         button.disabled = false;

@@ -4,12 +4,12 @@ import './style.css';
 import { dom, getGlobal } from './state/data.js';
 import { initializeState, setGlobal, reorderScene } from './state/actions.js';
 import { handleFileSelect, handleFileDrop } from './fileHandler.js';
-import { setupUI, resetApplicationState } from './ui/uiOrchestrator.js';
+import { setupUI, resetApplicationState, renderExportOptionsMenu } from './ui/uiOrchestrator.js';
 import { initDragAndDrop } from './ui/globalUI.js';
 import { toggleAllPlayback } from './controllers/playbackController.js';
-import { handleExport } from './controllers/exportController.js'; 
+import { handleExport } from './controllers/exportController.js';
 import { handleAbletonExport } from './controllers/abletonAlsExporterController.js';
-import { handleDawProjectExport } from './controllers/dawProjectExporterController.js'; // <-- Corrected Import
+import { handleDawProjectExport } from './controllers/dawProjectExporterController.js';
 import { handleDrag, handleDragEnd, changeZoom, applyZoom, handleWheelZoom } from './controllers/waveformInteraction.js';
 import { ZOOM_FACTOR } from './config.js';
 
@@ -22,10 +22,24 @@ function main() {
     dom.fileInput.addEventListener('change', handleFileSelect);
     dom.resetBtn.addEventListener('click', () => resetApplicationState(true));
     dom.playAllBtn.addEventListener('click', toggleAllPlayback);
-    dom.exportBtn.addEventListener('click', () => handleExport('all'));
-    dom.exportSelectedBtn.addEventListener('click', handleAbletonExport); // Changed to call Ableton export
-    
+    dom.exportBtn.addEventListener('click', handleExport);
+    dom.exportAlsBtn.addEventListener('click', handleAbletonExport);
     dom.exportDawProjectBtn.addEventListener('click', handleDawProjectExport);
+
+    dom.exportOptionsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const menu = dom.exportOptionsMenu;
+        const isVisible = menu.style.display === 'block';
+        menu.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) {
+            renderExportOptionsMenu();
+        }
+    });
+
+    dom.exportSelectedMenuItem.addEventListener('click', () => {
+        setGlobal('exportSelectedOnly', !getGlobal('exportSelectedOnly'));
+        renderExportOptionsMenu();
+    });
 
     dom.uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dom.uploadBox.classList.add('bg-gray-600'); });
     dom.uploadBox.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dom.uploadBox.classList.remove('bg-gray-600'); });
@@ -35,7 +49,13 @@ function main() {
     dom.zoomOutBtn.addEventListener('click', () => changeZoom(1 / ZOOM_FACTOR));
     dom.zoomFitBtn.addEventListener('click', () => applyZoom(1));
     
-    // --- Global Drag Listeners ---
+    // --- Global Listeners ---
+    window.addEventListener('click', () => {
+        if (dom.exportOptionsMenu.style.display === 'block') {
+            dom.exportOptionsMenu.style.display = 'none';
+        }
+    });
+
     window.addEventListener('mousemove', handleDrag, { passive: false });
     window.addEventListener('touchmove', handleDrag, { passive: false });
     window.addEventListener('mouseup', handleDragEnd);

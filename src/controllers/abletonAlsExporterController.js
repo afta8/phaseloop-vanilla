@@ -57,12 +57,14 @@ async function createAllRealignedBlobs(scenes) {
  * The main export handler that uses the AbletonAlsExporter class.
  */
 export async function handleAbletonExport() {
-    const button = dom.exportSelectedBtn; // We are reusing this button
-    const buttonText = dom.exportSelectedBtnText;
+    const button = dom.exportAlsBtn;
+    const buttonText = dom.exportAlsBtnText;
     if (!button || !buttonText) return;
 
-    const originalText = 'Export .als';
-    const scenes = getScenes().filter(s => s.audioAssignments.size > 0);
+    const exportSelectedOnly = getGlobal('exportSelectedOnly');
+    const originalText = buttonText.textContent;
+    let scenes = exportSelectedOnly ? [getActiveScene()] : getScenes();
+    scenes = scenes.filter(s => s && s.audioAssignments.size > 0);
     const tracks = getTracks();
 
     if (scenes.length === 0) return;
@@ -112,7 +114,7 @@ export async function handleAbletonExport() {
         });
 
         const projectZipBlob = await exporter.generateProjectZip();
-        const projectName = `phaseloop-session-${Date.now()}`;
+        const projectName = exportSelectedOnly ? `phaseloop_${scenes[0].name.replace(/[\s/]/g, '_')}` : `phaseloop-session-${Date.now()}`;
         const downloadLink = document.createElement('a');
         downloadLink.href = URL.createObjectURL(projectZipBlob);
         downloadLink.download = `${projectName}.als.zip`;

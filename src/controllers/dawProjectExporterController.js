@@ -56,11 +56,13 @@ function detectTempoFromFilenames(scenes) {
  */
 export async function handleDawProjectExport() {
     const button = dom.exportDawProjectBtn;
-    const buttonText = document.getElementById('export-dawproject-btn-text');
+    const buttonText = dom.exportDawProjectBtnText;
     if (!button || !buttonText) return;
 
+    const exportSelectedOnly = getGlobal('exportSelectedOnly');
     const originalText = 'Export .dawproject';
-    const scenes = getScenes().filter(s => s.audioAssignments.size > 0);
+    let scenes = exportSelectedOnly ? [getActiveScene()] : getScenes();
+    scenes = scenes.filter(s => s && s.audioAssignments.size > 0);
     const tracks = getTracks();
 
     if (scenes.length === 0) return;
@@ -119,7 +121,8 @@ export async function handleDawProjectExport() {
 
         const a = document.createElement('a');
         a.href = URL.createObjectURL(projectBlob);
-        a.download = 'phaseloop-session.dawproject';
+        const fileName = exportSelectedOnly ? `phaseloop_${scenes[0].name.replace(/[\s/]/g, '_')}.dawproject` : 'phaseloop-session.dawproject';
+        a.download = fileName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

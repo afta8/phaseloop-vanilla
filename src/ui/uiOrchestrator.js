@@ -10,6 +10,11 @@ import { renderSceneTabs, closeContextMenu } from './sceneTabs.js';
 import { createTrackShell, getWaveformAreaHTML, updateTrackMuteSoloStyles } from './trackUI.js';
 import { updateGlobalZoomButtons } from './globalUI.js';
 
+export function renderExportOptionsMenu() {
+    const isEnabled = getGlobal('exportSelectedOnly');
+    dom.exportSelectedMenuItem.classList.toggle('active', isEnabled);
+}
+
 export function setupUI() {
     renderSceneTabs();
     
@@ -94,9 +99,7 @@ function updateWaveformDisplays() {
         
         const hasAudio = activeScene.audioAssignments.size > 0;
         dom.exportBtn.disabled = !hasAudio;
-        dom.exportSelectedBtn.disabled = !hasAudio;
-        // --- FIX ---
-        // Enable the .dawproject button under the same condition
+        dom.exportAlsBtn.disabled = !hasAudio;
         dom.exportDawProjectBtn.disabled = !hasAudio;
         dom.playAllBtn.disabled = !hasAudio;
         updateAudioAndUI();
@@ -164,9 +167,7 @@ export function resetApplicationState(fullReset = true) {
         dom.uploadScreen.style.display = 'block';
         dom.fileInput.value = '';
         dom.exportBtn.disabled = true;
-        dom.exportSelectedBtn.disabled = true;
-        // --- ADDITION ---
-        // Ensure the new button is also disabled on reset
+        dom.exportAlsBtn.disabled = true;
         dom.exportDawProjectBtn.disabled = true;
         dom.playAllBtn.disabled = true;
     }
