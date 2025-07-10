@@ -24,9 +24,10 @@ This repository contains the original version of the application, built with van
     * **Playback via Spacebar** provides quick keyboard access to start and stop audio.
     * **Intelligent File Loading** specifically for Endlesss users parses filenames for a track number (e.g., "8 - My Loop.wav") and automatically places the audio on the correct track.
 * **Multiple Export Options**:
-    * **Export as .dawproject (Recommended):** Generates a single `.dawproject` file for seamless import into compatible DAWs like Bitwig Studio and Studio One. This format includes realigned audio, auto-detected project tempo, scene colors, and sets clips to stretch mode.
+    * **Export as .dawproject:** Generates a single `.dawproject` file for seamless import into compatible DAWs like Bitwig Studio and Studio One. This format includes realigned audio, auto-detected project tempo, scene colors, and sets clips to stretch mode.
+    * **Export as .als (Ableton Live Set):** Creates a native Ableton Live project, bundling all realigned audio clips into a `.zip` archive that can be opened directly in Ableton Live.
     * **Export All (ZIP):** Creates a single `.zip` archive containing a sub-folder for each scene with its realigned `.wav` files.
-    * **Export Selected (ZIP):** Exports only the currently active scene as a `.zip` file.
+    * **"Selected Only" Mode:** A toggleable option in the export settings menu allows all export formats to output only the currently selected scene, rather than the entire session.
 * **Progressive Web App (PWA):** The application is fully installable on desktop and mobile devices for offline access and an integrated, native-app-like experience.
 
 ## Tech Stack
@@ -35,7 +36,7 @@ This repository contains the original version of the application, built with van
 * **Styling:** Tailwind CSS
 * **Audio:** Web Audio API
 * **Build Tool:** Vite
-* **Packaging:** JSZip, fast-xml-parser
+* **Packaging:** JSZip, fast-xml-parser, pako
 
 ## Local Development Setup
 
@@ -60,7 +61,7 @@ This project uses Node.js and Vite for local development.
     This will start a local server (usually on `http://localhost:5173`) with live reloading.
 
 ## Acknowledgements
-
+* The `.als` exporter was adapted from the [ableton-project-stager](https://github.com/afta8/ableton-project-stager).
 * This project utilizes the **DAWproject** open exchange format. Learn more at [https://github.com/bitwig/dawproject](https://github.com/bitwig/dawproject).
 * The `.dawproject` exporter was derived from the excellent [dawproject-typescript](https://github.com/perivar/dawproject-typescript) library by Per Ivar Nerseth.
 
