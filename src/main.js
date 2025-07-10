@@ -7,7 +7,8 @@ import { handleFileSelect, handleFileDrop } from './fileHandler.js';
 import { setupUI, resetApplicationState } from './ui/uiOrchestrator.js';
 import { initDragAndDrop } from './ui/globalUI.js';
 import { toggleAllPlayback } from './controllers/playbackController.js';
-import { handleExport } from './controllers/exportController.js';
+import { handleExport } from './controllers/exportController.js'; 
+import { handleAbletonExport } from './controllers/abletonAlsExporterController.js';
 import { handleDawProjectExport } from './controllers/dawProjectExporterController.js'; // <-- Corrected Import
 import { handleDrag, handleDragEnd, changeZoom, applyZoom, handleWheelZoom } from './controllers/waveformInteraction.js';
 import { ZOOM_FACTOR } from './config.js';
@@ -22,7 +23,7 @@ function main() {
     dom.resetBtn.addEventListener('click', () => resetApplicationState(true));
     dom.playAllBtn.addEventListener('click', toggleAllPlayback);
     dom.exportBtn.addEventListener('click', () => handleExport('all'));
-    dom.exportSelectedBtn.addEventListener('click', () => handleExport('selected'));
+    dom.exportSelectedBtn.addEventListener('click', handleAbletonExport); // Changed to call Ableton export
     
     dom.exportDawProjectBtn.addEventListener('click', handleDawProjectExport);
 

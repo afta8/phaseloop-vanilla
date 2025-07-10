@@ -1,13 +1,14 @@
 // src/controllers/abletonAlsExporterController.js
 
-import { getScenes, getGlobal, getGroup, getTracks } from '../state/data.js';
+import { getScenes, getGlobal, getGroup, getTracks, dom } from '../state/data.js';
 import { createRealignedWavBlob } from '../audio.js';
 import { showError } from '../ui/globalUI.js';
 import { AbletonAlsExporter } from '../lib/ableton-als-exporter.js';
 
 /**
- * A helper function to detect the first valid BPM from any audio filename in a scene.
- * @param {Array<Scene>} scenes - The array of scenes to search through.
+ * Iterates through scenes to find the first filename containing a BPM value.
+ * This is borrowed from the dawProjectExporterController.
+ * @param {Array} scenes - The scenes to search through.
  * @returns {number|null} The detected BPM or null if not found.
  */
 function detectTempoFromFilenames(scenes) {
@@ -26,11 +27,38 @@ function detectTempoFromFilenames(scenes) {
 }
 
 /**
+ * A helper function to generate all the necessary realigned audio blobs for the session.
+ * @param {Array} scenes - The scenes to process.
+ * @returns {Promise<Map<string, Map<string, {name: string, blob: Blob}>>>}
+ */
+async function createAllRealignedBlobs(scenes) {
+    const audioContext = getGlobal('audioContext');
+    const allBlobs = new Map();
+
+    for (const scene of scenes) {
+        if (scene.audioAssignments.size === 0) continue;
+
+        const group = getGroup(scene.groupId);
+        const finalLoopStart = group.loopStart;
+        const sceneBlobs = new Map();
+
+        for (const [trackId, audioData] of scene.audioAssignments.entries()) {
+            const wavBlob = createRealignedWavBlob(audioData, finalLoopStart, audioContext);
+            const sanitizedFileName = audioData.name.replace(/\.[^/.]+$/, "");
+            sceneBlobs.set(trackId, { name: `realigned_${sanitizedFileName}.wav`, blob: wavBlob });
+        }
+        allBlobs.set(scene.id, sceneBlobs);
+    }
+    return allBlobs;
+}
+
+
+/**
  * The main export handler that uses the AbletonAlsExporter class.
  */
-export async function handleAlsExport() {
-    const button = document.getElementById('export-als-btn');
-    const buttonText = document.getElementById('export-als-btn-text');
+export async function handleAbletonExport() {
+    const button = dom.exportSelectedBtn; // We are reusing this button
+    const buttonText = dom.exportSelectedBtnText;
     if (!button || !buttonText) return;
 
     const originalText = 'Export .als';
@@ -44,56 +72,58 @@ export async function handleAlsExport() {
 
     try {
         const exporter = new AbletonAlsExporter();
-        const audioContext = getGlobal('audioContext');
-
+        
         const detectedTempo = detectTempoFromFilenames(scenes) || 120;
         exporter.setTempo(detectedTempo);
 
-        tracks.forEach(track => exporter.addTrack({ name: track.id.replace(/track_(\d+).*/, 'Track $1') }));
-        
-        scenes.forEach(scene => {
-            const group = getGroup(scene.groupId);
-            exporter.addScene({ name: scene.name, colorHex: group.colorTheme.hex });
+        tracks.forEach((_, index) => {
+            exporter.addTrack({ name: `Track ${index + 1}` });
         });
 
-        for (const [sceneIndex, scene] of scenes.entries()) {
+        scenes.forEach(scene => {
             const group = getGroup(scene.groupId);
-            const finalLoopStart = group.loopStart;
-            const trackIds = Array.from(scene.audioAssignments.keys());
+            const colorHex = group ? group.colorTheme.hex : '#8c8c8c'; // Default gray if no group
+            exporter.addScene({ name: scene.name, colorHex });
+        });
 
-            for (const [trackIndex, trackId] of tracks.map(t => t.id).entries()) {
-                if (scene.audioAssignments.has(trackId)) {
-                    const audioData = scene.audioAssignments.get(trackId);
-                    const wavBlob = createRealignedWavBlob(audioData, finalLoopStart, audioContext);
-                    const sanitizedFileName = audioData.name.replace(/\.[^/.]+$/, ".wav");
-                    const audioDurationInSeconds = audioData.audioBuffer.duration;
-                    const clipDurationInBeats = (audioDurationInSeconds * detectedTempo) / 60;
+        const allRealignedBlobs = await createAllRealignedBlobs(scenes);
 
-                    exporter.addClip(sceneIndex, trackIndex, {
-                        name: sanitizedFileName,
-                        file: wavBlob,
-                        bpm: detectedTempo,
-                        loop: true,
-                        warpMode: 4, // Complex Pro
-                        duration: audioDurationInSeconds,
-                        lengthInBeats: clipDurationInBeats,
-                    });
-                }
+        scenes.forEach((scene, sceneIndex) => {
+            const sceneBlobs = allRealignedBlobs.get(scene.id);
+            if (sceneBlobs) {
+                tracks.forEach((track, trackIndex) => {
+                    const audioData = scene.audioAssignments.get(track.id);
+                    if (audioData) {
+                        const { name, blob } = sceneBlobs.get(track.id);
+                        const lengthInBeats = audioData.audioBuffer.duration * (detectedTempo / 60);
+
+                        exporter.addClip(sceneIndex, trackIndex, {
+                            file: blob,
+                            name: name,
+                            bpm: detectedTempo,
+                            loop: true,
+                            warpMode: 0, // 'Beats'
+                            duration: audioData.audioBuffer.duration,
+                            lengthInBeats: lengthInBeats,
+                        });
+                    }
+                });
             }
-        }
-        
-        const projectBlob = await exporter.generateProjectZip();
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(projectBlob);
-        a.download = 'phaseloop-session.zip';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(a.href);
+        });
+
+        const projectZipBlob = await exporter.generateProjectZip();
+        const projectName = `phaseloop-session-${Date.now()}`;
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(projectZipBlob);
+        downloadLink.download = `${projectName}.als.zip`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(downloadLink.href);
 
     } catch (err) {
-        console.error("Error creating .als file:", err);
-        showError("Failed to create .als file.");
+        console.error("Error creating Ableton Live Set:", err);
+        showError("Failed to create Ableton Live Set.");
     } finally {
         button.disabled = false;
         buttonText.textContent = originalText;
