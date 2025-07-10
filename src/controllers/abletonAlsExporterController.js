@@ -1,6 +1,6 @@
 // src/controllers/abletonAlsExporterController.js
 
-import { getScenes, getGlobal, getGroup, getTracks, dom } from '../state/data.js';
+import { getScenes, getActiveScene, getGlobal, getGroup, getTracks, dom } from '../state/data.js';
 import { createRealignedWavBlob } from '../audio.js';
 import { showError } from '../ui/globalUI.js';
 import { AbletonAlsExporter } from '../lib/ableton-als-exporter.js';

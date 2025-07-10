@@ -1,6 +1,6 @@
 // src/controllers/dawProjectExporterController.js
 
-import { getScenes, getGlobal, getGroup, getTracks, dom } from '../state/data.js';
+import { getScenes, getActiveScene, getGlobal, getGroup, getTracks, dom } from '../state/data.js';
 import { createRealignedWavBlob } from '../audio.js';
 import { showError } from '../ui/globalUI.js';
 import { SimpleDawProjectExporter } from '../lib/daw-project-exporter.js';
@@ -60,7 +60,7 @@ export async function handleDawProjectExport() {
     if (!button || !buttonText) return;
 
     const exportSelectedOnly = getGlobal('exportSelectedOnly');
-    const originalText = 'Export .dawproject';
+    const originalText = 'Export DawProject';
     let scenes = exportSelectedOnly ? [getActiveScene()] : getScenes();
     scenes = scenes.filter(s => s && s.audioAssignments.size > 0);
     const tracks = getTracks();
