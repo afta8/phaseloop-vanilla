@@ -13,7 +13,8 @@
   "license": "MIT",
   "dependencies": {
     "fast-xml-parser": "^5.2.5",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "pako": "^2.1.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",

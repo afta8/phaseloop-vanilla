@@ -42,7 +42,7 @@ function openContextMenu(event, scene) {
             input.select();
             const saveName = () => {
                 updateSceneName(sceneId, input.value);
-                renderSceneTabs();
+                setTimeout(renderSceneTabs, 0);
             };
             input.addEventListener('blur', saveName);
             input.addEventListener('keydown', (keyEvent) => {
